@@ -41,7 +41,7 @@ export default function VideoEditor({ onSnapshotsReady }) {
     if (!isFinite(dur) || dur <= 0) return;
 
     setSnapsLoading(true);
-    const count = 10; // always generate 10, display snapshotCount
+    const count = 10;
     const canvas = document.createElement('canvas');
     canvas.width = 160;
     canvas.height = 90;
@@ -95,28 +95,42 @@ export default function VideoEditor({ onSnapshotsReady }) {
     return () => window.removeEventListener('mouseup', handleTimelineMouseUp);
   }, []);
 
-  // Keyboard shortcuts
+  // Keyboard shortcuts — use e.code (раскладка не важна) + e.key toLowerCase
   useEffect(() => {
     const handler = (e) => {
-      if (e.target.tagName === 'INPUT') return;
-      if (!current) return;
+      // Игнорируем поля ввода
+      const tag = e.target.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
+      // Снимаем фокус с видео чтобы пробел не вызывал play/pause браузера
+      // но сначала получаем currentTime
       const t = videoRef.current?.currentTime ?? 0;
 
-      if (e.key === 'f') {
+      // Используем e.code (не зависит от раскладки клавиатуры)
+      // и e.key.toLowerCase() как запасной вариант
+      const code = e.code; // KeyF, KeyI, KeyO, KeyR, KeyD
+      const key = e.key.toLowerCase();
+
+      if (code === 'KeyF' || key === 'f') {
+        e.preventDefault();
         document.getElementById('file-input')?.click();
-      } else if (e.key === 'i') {
-        setInPoint(current.id, t);
-      } else if (e.key === 'o') {
-        setOutPoint(current.id, t);
-      } else if (e.key === 'r') {
-        clearInOut(current.id);
-      } else if (e.key === 'd') {
+      } else if (code === 'KeyI' || key === 'i') {
+        e.preventDefault();
+        if (current) setInPoint(current.id, t);
+      } else if (code === 'KeyO' || key === 'o') {
+        e.preventDefault();
+        if (current) setOutPoint(current.id, t);
+      } else if (code === 'KeyR' || key === 'r') {
+        e.preventDefault();
+        if (current) clearInOut(current.id);
+      } else if (code === 'KeyD' || key === 'd') {
+        e.preventDefault();
         removeCurrentVideo();
       }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [current?.id, current?.duration]);
+  }, [current?.id, current?.duration, setInPoint, setOutPoint, clearInOut, removeCurrentVideo]);
 
   const handleFileChange = (e) => {
     if (e.target.files?.length) addVideos(e.target.files);
@@ -143,9 +157,6 @@ export default function VideoEditor({ onSnapshotsReady }) {
           {current && <span className="video-name">&nbsp;{current.name}</span>}
         </span>
         <button className="nav-btn" onClick={next} disabled={currentIndex >= videos.length - 1}>&#8250;</button>
-        <button className="upload-btn" onClick={() => document.getElementById('file-input').click()}>
-          📂 Загрузить видео
-        </button>
       </div>
 
       {/* Video element */}
@@ -157,14 +168,71 @@ export default function VideoEditor({ onSnapshotsReady }) {
             onLoadedMetadata={handleLoadedMetadata}
             onTimeUpdate={handleTimeUpdate}
             controls
+            onKeyDown={(e) => {
+              // Перехватываем клавиши на самом видео тоже
+              const code = e.code;
+              const key = e.key.toLowerCase();
+              const t = videoRef.current?.currentTime ?? 0;
+              if (['KeyI','KeyO','KeyR','KeyD','KeyF'].includes(code) ||
+                  ['i','o','r','d','f'].includes(key)) {
+                e.preventDefault();
+                window.dispatchEvent(new KeyboardEvent('keydown', { code, key: e.key, bubbles: false }));
+              }
+            }}
           />
         ) : (
           <div className="no-video">
             <p>Нет загруженных видео</p>
-            <p>Нажмите <kbd>F</kbd> для выбора файлов</p>
+            <button
+              className="upload-btn"
+              onClick={() => document.getElementById('file-input')?.click()}
+            >
+              📂 Загрузить видео
+            </button>
           </div>
         )}
       </div>
+
+      {/* Кнопки горячих клавиш */}
+      {current && (
+        <div className="shortcut-buttons">
+          <button
+            className="sc-btn"
+            onClick={() => { if (current) setInPoint(current.id, videoRef.current?.currentTime ?? 0); }}
+            title="Установить In Point"
+          >
+            [I] In
+          </button>
+          <button
+            className="sc-btn"
+            onClick={() => { if (current) setOutPoint(current.id, videoRef.current?.currentTime ?? 0); }}
+            title="Установить Out Point"
+          >
+            [O] Out
+          </button>
+          <button
+            className="sc-btn sc-btn-reset"
+            onClick={() => { if (current) clearInOut(current.id); }}
+            title="Сбросить In/Out"
+          >
+            [R] Сброс
+          </button>
+          <button
+            className="sc-btn sc-btn-del"
+            onClick={() => removeCurrentVideo()}
+            title="Удалить видео"
+          >
+            [D] Удалить
+          </button>
+          <button
+            className="sc-btn sc-btn-add"
+            onClick={() => document.getElementById('file-input')?.click()}
+            title="Добавить видео"
+          >
+            [F] Добавить
+          </button>
+        </div>
+      )}
 
       {/* Timeline */}
       <div className="timeline-area">
@@ -174,21 +242,16 @@ export default function VideoEditor({ onSnapshotsReady }) {
           onMouseDown={handleTimelineMouseDown}
           onMouseMove={handleTimelineMouseMove}
         >
-          {/* dimmed left */}
           {inRatio !== null && (
             <div className="timeline-dim" style={{ left: 0, width: `${inRatio * 100}%` }} />
           )}
-          {/* selected region */}
           {inRatio !== null && outRatio !== null && (
             <div className="timeline-selected" style={{ left: `${inRatio * 100}%`, width: `${(outRatio - inRatio) * 100}%` }} />
           )}
-          {/* dimmed right */}
           {outRatio !== null && (
             <div className="timeline-dim" style={{ left: `${outRatio * 100}%`, right: 0 }} />
           )}
-          {/* current bar */}
           <div className="current-bar" style={{ left: `${curRatio * 100}%` }} />
-          {/* in/out markers */}
           {inRatio !== null && <div className="marker marker-in" style={{ left: `${inRatio * 100}%` }}>I</div>}
           {outRatio !== null && <div className="marker marker-out" style={{ left: `${outRatio * 100}%` }}>O</div>}
         </div>

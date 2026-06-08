@@ -88,19 +88,6 @@ kbd {
 .nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 .video-counter { font-weight: 600; color: var(--accent); }
 .video-name { font-size: 12px; color: var(--text2); font-weight: 400; }
-.upload-btn {
-  margin-left: auto;
-  background: var(--accent);
-  color: #000;
-  border: none;
-  border-radius: var(--radius);
-  padding: 6px 14px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background .15s;
-}
-.upload-btn:hover { background: var(--accent2); }
 
 .video-wrapper { background: #000; display: flex; align-items: center; justify-content: center; min-height: 320px; }
 .main-video { width: 100%; max-height: 420px; display: block; }
@@ -307,3 +294,28 @@ kbd {
 }
 .seg-chip:hover { border-color: var(--accent); }
 .seg-chip.active { background: var(--accent); color: #000; font-weight: 600; }
+
+/* Shortcut buttons */
+.shortcut-buttons {
+  display: flex;
+  gap: 8px;
+  padding: 8px 0;
+  flex-wrap: wrap;
+}
+.sc-btn {
+  padding: 6px 14px;
+  border: 1px solid #555;
+  background: #2a2a2a;
+  color: #eee;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: background 0.15s;
+}
+.sc-btn:hover { background: #3a3a3a; border-color: #aaa; }
+.sc-btn-reset { border-color: #888; }
+.sc-btn-del { border-color: #e05050; color: #ff8080; }
+.sc-btn-del:hover { background: #3a1a1a; }
+.sc-btn-add { border-color: #50a0e0; color: #80c8ff; }
+.sc-btn-add:hover { background: #1a2a3a; }
