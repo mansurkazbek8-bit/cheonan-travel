@@ -143,6 +143,9 @@ export default function VideoEditor({ onSnapshotsReady }) {
           {current && <span className="video-name">&nbsp;{current.name}</span>}
         </span>
         <button className="nav-btn" onClick={next} disabled={currentIndex >= videos.length - 1}>&#8250;</button>
+        <button className="upload-btn" onClick={() => document.getElementById('file-input').click()}>
+          📂 Загрузить видео
+        </button>
       </div>
 
       {/* Video element */}
